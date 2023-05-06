@@ -1,107 +1,82 @@
-import RPi.GPIO as GPIO
+from gpiozero import LED, Button, Buzzer
 import time
 import random
 
-# Definir los pines de los botones
-boton1_pin = 2
-boton2_pin = 3
-boton3_pin = 4
+led_pins = [4, 17, 18]
+button_pins = [27, 22, 23]
+buzzer_pin = 24
 
-# Definir los pines de las luces
-luz1_pin = 5
-luz2_pin = 6
-luz3_pin = 7
+leds = [LED(pin) for pin in led_pins]
+buttons = [Button(pin) for pin in button_pins]
+buzzer = Buzzer(buzzer_pin)
 
-# Definir el pin del buzzer
-buzzer_pin = 8
+# Asignar sonidos a cada LED
+sounds = {
+    4: [400, 0.3],
+    17: [600, 0.3],
+    18: [800, 0.3]
+}
 
-# Configurar los pines de los botones como entradas
-GPIO.setup(boton1_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(boton2_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(boton3_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+def play_sound(pin):
+    # Reproducir el sonido correspondiente al pin del LED
+    if pin in sounds:
+        frequency, duration = sounds[pin]
+        buzzer.play(frequency)
+        time.sleep(duration)
+        buzzer.stop()
 
-# Configurar los pines de las luces como salidas
-GPIO.setup(luz1_pin, GPIO.OUT)
-GPIO.setup(luz2_pin, GPIO.OUT)
-GPIO.setup(luz3_pin, GPIO.OUT)
-
-# Configurar el pin del buzzer como salida
-GPIO.setup(buzzer_pin, GPIO.OUT)
-
-# Definir los sonidos del buzzer
-sonido1 = [200, 0.1]
-sonido2 = [400, 0.1]
-sonido3 = [600, 0.1]
-
-# Crear una lista de luces y sonidos
-luces = [luz1_pin, luz2_pin, luz3_pin]
-sonidos = [sonido1, sonido2, sonido3]
-
-# Función para reproducir un sonido en el buzzer
-def reproducir_sonido(frecuencia, duracion):
-    if frecuencia > 0:
-        GPIO.output(buzzer_pin, GPIO.HIGH)
-        time.sleep(duracion)
-        GPIO.output(buzzer_pin, GPIO.LOW)
-        time.sleep(0.05)
-
-# Función para iluminar una luz y reproducir un sonido
-def iluminar_luz(luz, sonido):
-    GPIO.output(luz, GPIO.HIGH)
-    reproducir_sonido(sonido[0], sonido[1])
-    GPIO.output(luz, GPIO.LOW)
-    time.sleep(0.5)
-
-# Función para reproducir una secuencia aleatoria de luces y sonidos
-def reproducir_secuencia(secuencia):
-    for i in range(len(secuencia)):
-        iluminar_luz(luces[secuencia[i]], sonidos[secuencia[i]])
-
-# Función para leer el botón presionado
-def leer_boton():
-    boton1 = not GPIO.input(boton1_pin)
-    boton2 = not GPIO.input(boton2_pin)
-    boton3 = not GPIO.input(boton3_pin)
-
-    if boton1:
-        return 0
-    elif boton2:
-        return 1
-    elif boton3:
-        return 2
-
-# Función principal del juego
-def jugar():
-    secuencia = []
-    intento = []
-
-    while True:
-        secuencia.append(random.randint(0, 2))
-        reproducir_secuencia(secuencia)
-
-        for i in range(len(secuencia)):
-            boton_presionado = False
-
-            while not boton_presionado:
-                boton = leer_boton()
-                if boton is not None:
-                    iluminar_luz(luces[boton], sonidos[boton])
-                    intento.append(boton)
-                    boton_presionado = True
-                if intento[i] != secuencia[i]:
-                    GPIO.output(buzzer_pin, GPIO.HIGH)
-                    time.sleep(0.5)
-                    GPIO.output(buzzer_pin, GPIO.LOW)
-                    return False
-
+def generate_sequence(length):
+    # Generar una secuencia aleatoria de encendido de los LEDs
+    sequence = []
+    for i in range(length):
+        led = random.choice(leds)
+        sequence.append(led)
+        play_sound(led.pin)
+        led.on()
         time.sleep(0.5)
-        intento = []
+        led.off()
+        time.sleep(0.5)
+    return sequence
 
-# Configurar el modo de la biblioteca RPi.GPIO
-GPIO.setmode(GPIO.BCM)
+def get_input_sequence(length):
+    # Esperar a que el usuario ingrese la secuencia a través de los botones
+    input_sequence = []
+    while len(input_sequence) < length:
+        for button in buttons:
+            if button.is_pressed:
+                input_sequence.append(button)
+                play_sound(button.pin)
+                time.sleep(0.5)
+                break
+    return input_sequence
 
-# Ejecutar la función principal del juego
-jugar()
+def play_game():
+    level = 1
+    while True:
+        # Generar y reproducir la secuencia aleatoria
+        sequence = generate_sequence(level)
+        input_sequence = get_input_sequence(level)
+        # Verificar si la secuencia ingresada es correcta
+        if sequence == input_sequence:
+            print("Correcto!")
+            level += 1
+            # Incrementar la velocidad de la secuencia
+            # para los siguientes niveles
+            for i in range(level):
+                time.sleep(0.1)
+                led = random.choice(leds)
+                sequence.append(led)
+                play_sound(led.pin)
+                led.on()
+                time.sleep(0.5)
+                led.off()
+                time.sleep(0.5)
+        else:
+            print("Game Over!")
+            buzzer.play(1000)
+            time.sleep(1)
+            buzzer.stop()
+            level = 1
 
-# Limpiar los pines de la Raspberry Pi
-GPIO.cleanup()
+# Iniciar el juego
+play_game()
