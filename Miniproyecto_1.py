@@ -1,5 +1,5 @@
 from gpiozero import LED, Button, Buzzer
-import time
+from time import sleep
 import random
 
 led_pins = [4, 17, 18]
@@ -10,73 +10,83 @@ leds = [LED(pin) for pin in led_pins]
 buttons = [Button(pin) for pin in button_pins]
 buzzer = Buzzer(buzzer_pin)
 
-# Asignar sonidos a cada LED
-sounds = {
-    4: [400, 0.3],
-    17: [600, 0.3],
-    18: [800, 0.3]
-}
+sequence = []
+level = 1
+speeds = [1, 0.75, 0.5]  # Velocidades para cada nivel
 
-def play_sound(pin):
-    # Reproducir el sonido correspondiente al pin del LED
-    if pin in sounds:
-        frequency, duration = sounds[pin]
-        buzzer.play(frequency)
-        time.sleep(duration)
-        buzzer.stop()
+# Asociar cada LED con un sonido
+sounds = {leds[0]: (262, 0.5), leds[1]: (330, 0.5), leds[2]: (392, 0.5)}
 
-def generate_sequence(length):
-    # Generar una secuencia aleatoria de encendido de los LEDs
-    sequence = []
-    for i in range(length):
-        led = random.choice(leds)
-        sequence.append(led)
-        play_sound(led.pin)
+# Función para reproducir un sonido en el buzzer
+def play_sound(frequency, duration):
+    buzzer.frequency = frequency
+    buzzer.on()
+    sleep(duration)
+    buzzer.off()
+
+# Función para generar una nueva secuencia aleatoria
+def generate_sequence():
+    return [random.choice(leds) for _ in range(level)]
+
+# Función para reproducir una secuencia
+def play_sequence():
+    for led in sequence:
         led.on()
-        time.sleep(0.5)
+        play_sound(*sounds[led])
         led.off()
-        time.sleep(0.5)
-    return sequence
+        sleep(speeds[level-1])
 
-def get_input_sequence(length):
-    # Esperar a que el usuario ingrese la secuencia a través de los botones
+# Función para esperar que el usuario repita la secuencia
+def get_input():
     input_sequence = []
-    while len(input_sequence) < length:
-        for button in buttons:
-            if button.is_pressed:
-                input_sequence.append(button)
-                play_sound(button.pin)
-                time.sleep(0.5)
-                break
+    for _ in range(level):
+        while True:
+            for i, button in enumerate(buttons):
+                if button.is_pressed:
+                    input_sequence.append(leds[i])
+                    play_sound(*sounds[leds[i]])
+                    sleep(0.5)
+                    break
+            else:
+                continue
+            break
     return input_sequence
 
-def play_game():
-    level = 1
-    while True:
-        # Generar y reproducir la secuencia aleatoria
-        sequence = generate_sequence(level)
-        input_sequence = get_input_sequence(level)
-        # Verificar si la secuencia ingresada es correcta
-        if sequence == input_sequence:
-            print("Correcto!")
-            level += 1
-            # Incrementar la velocidad de la secuencia
-            # para los siguientes niveles
-            for i in range(level):
-                time.sleep(0.1)
-                led = random.choice(leds)
-                sequence.append(led)
-                play_sound(led.pin)
-                led.on()
-                time.sleep(0.5)
-                led.off()
-                time.sleep(0.5)
-        else:
-            print("Game Over!")
-            buzzer.play(1000)
-            time.sleep(1)
-            buzzer.stop()
-            level = 1
+# Función para verificar si la secuencia ingresada por el usuario es correcta
+def check_input(input_sequence):
+    return input_sequence == sequence
 
-# Iniciar el juego
-play_game()
+# Función para reiniciar el juego
+def restart_game():
+    play_sound(262, 1)
+    sleep(1)
+    global level, sequence
+    level = 1
+    sequence = []
+
+# Bucle principal del juego
+while True:
+    print("Nivel:", level)
+    sleep(1)
+
+    # Generar y reproducir una nueva secuencia
+    sequence = generate_sequence()
+    play_sequence()
+
+    # Esperar que el usuario repita la secuencia
+    input_sequence = get_input()
+
+    # Verificar si la secuencia ingresada es correcta
+    if check_input(input_sequence):
+        level += 1
+        if level > len(speeds):
+            print("¡Ganaste!")
+            restart_game()
+        else:
+            print("¡Correcto! Siguiente nivel.")
+    else:
+        print("¡Incorrecto! Inténtalo de nuevo.")
+        play_sound(110, 2)
+        restart_game()
+
+    sleep(1)
