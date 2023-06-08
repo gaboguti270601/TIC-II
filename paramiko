@@ -1,0 +1,24 @@
+import paramiko
+import os
+
+# Configuración de la conexión SSH
+hostname = '192.168.18.25'
+username = 'raspi'
+password = 'raspi'
+
+# Ruta del archivo de log en la Raspberry Pi
+remote_path = '/home/raspi/log.txt'
+
+# Ruta local de destino en tu computadora
+local_path = 'C:/Users/gabog/Desktop/log.txt'
+
+def copiar_archivo(remote_path, local_path):
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(hostname, username=username, password=password)
+    sftp = ssh.open_sftp()
+    sftp.get(remote_path, local_path)
+    sftp.close()
+    ssh.close()
+
+copiar_archivo(remote_path, local_path)
