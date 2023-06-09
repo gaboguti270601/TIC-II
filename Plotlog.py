@@ -1,8 +1,30 @@
+import paramiko
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime
 
-# Leer el archivo de log y crear un DataFrame de pandas
+# Configuración de la conexión SSH
+hostname = '192.168.18.25'
+username = 'raspi'
+password = 'raspi'
+
+# Ruta del archivo de log en la Raspberry Pi
+remote_path = '/home/raspi/log.txt'
+
+# Ruta local de destino en tu computadora
+local_path = 'C:/Users/gabog/Desktop/log.txt'
+
+def copiar_archivo(remote_path, local_path):
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(hostname, username=username, password=password)
+    sftp = ssh.open_sftp()
+    sftp.get(remote_path, local_path)
+    sftp.close()
+    ssh.close()
+copiar_archivo(remote_path, local_path)
+#Leer el archivo de log y crear un DataFrame de pandas
 df = pd.read_csv('log.txt', delimiter=' - ', names=['timestamp', 'description'])
 
 # Convertir la columna de timestamp a formato de fecha y hora
@@ -16,22 +38,28 @@ df['humidity'] = df['description'].str.extract(r'Humidity: ([0-9]+)')
 df['temperature'] = pd.to_numeric(df['temperature'])
 df['humidity'] = pd.to_numeric(df['humidity'])
 
-# Graficar la temperatura
-plt.figure(figsize=(10, 6))
-plt.plot(df['timestamp'], df['temperature'], color='red')
-plt.xlabel('Tiempo')
-plt.ylabel('Temperatura (°C)')
-plt.title('Gráfico de Temperatura')
-plt.grid(True)
-plt.show()
 
-# Graficar la humedad
-plt.figure(figsize=(10, 6))
-plt.plot(df['timestamp'], df['humidity'], color='blue')
-plt.xlabel('Tiempo')
-plt.ylabel('Humedad (%)')
-plt.title('Gráfico de Humedad')
-plt.grid(True)
+# Crear una figura con subplots
+fig, axes = plt.subplots(2, 1, figsize=(10, 12))
+
+# Graficar la temperatura en el primer subplot
+axes[0].plot(df['timestamp'], df['temperature'], color='red')
+axes[0].set_xlabel('Tiempo')
+axes[0].set_ylabel('Temperatura (°C)')
+axes[0].set_title('Gráfico de Temperatura')
+axes[0].grid(True)
+
+# Graficar la humedad en el segundo subplot
+axes[1].plot(df['timestamp'], df['humidity'], color='blue')
+axes[1].set_xlabel('Tiempo')
+axes[1].set_ylabel('Humedad (%)')
+axes[1].set_title('Gráfico de Humedad')
+axes[1].grid(True)
+
+# Ajustar el espaciado entre subplots
+plt.tight_layout()
+
+# Mostrar los subplots
 plt.show()
 
 # Calcular los valores mínimo, máximo y promedio de temperatura y humedad
