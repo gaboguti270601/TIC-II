@@ -10,7 +10,7 @@ username = 'raspi'
 password = 'raspi'
 
 # Ruta del archivo a copiarse.
-ruta_origen = '/home/raspi/log.txt'
+ruta_origen = '/home/raspi/Documents/log.txt'
 
 # Ruta donde se copiara el archivo.
 ruta_destino = 'C:/Users/gabog/Desktop/log.txt'
