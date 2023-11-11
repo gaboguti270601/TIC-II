@@ -33,7 +33,7 @@ def udp_server():
     while True:
         print('Conectado por', address[0])
         message, address = server_udp.recvfrom(1024)
-        print("Recibido (UDP)", address[0], ":", message.decode('utf-8'))
+        print("Recibido (UDP):", message.decode('utf-8'))
 
 def main():
     # Iniciar servidores en hilos separados
