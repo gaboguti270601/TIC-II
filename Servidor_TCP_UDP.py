@@ -31,8 +31,8 @@ def udp_server():
     print("El servidor UDP está esperando conexiones en el puerto", PORT_UDP)
 
     while True:
-        print('Conectado por', address[0])
         message, address = server_udp.recvfrom(1024)
+        print('Conectado por', address[0])
         print("Recibido (UDP):", message.decode('utf-8'))
 
 def main():
