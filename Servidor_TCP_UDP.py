@@ -9,7 +9,7 @@ def tcp_server():
         s_tcp.bind((HOST_TCP, PORT_TCP))
         s_tcp.listen()
         
-        print("El servidor TCP está esperando conexiones en el puerto", PORT_TCP)
+        print("El servidor TCP est0á esperando conexiones en el puerto", PORT_TCP)
         
         while True:
             conn, addr = s_tcp.accept()
@@ -31,8 +31,9 @@ def udp_server():
     print("El servidor UDP está esperando conexiones en el puerto", PORT_UDP)
 
     while True:
+        print('Conectado por', address[0])
         message, address = server_udp.recvfrom(1024)
-        print("Recibido de", address[0], ":", message.decode('utf-8'))
+        print("Recibido (UDP)", address[0], ":", message.decode('utf-8'))
 
 def main():
     # Iniciar servidores en hilos separados
