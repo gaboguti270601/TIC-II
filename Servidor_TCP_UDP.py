@@ -3,21 +3,18 @@ import threading
 import json
 
 def guardar_mensaje(tipo, direccion, mensaje):
-    # Intentar leer mensajes existentes del archivo
     try:
         with open('mensajes.json', 'r') as file:
             mensajes = json.load(file)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         mensajes = []
 
-    # Agregar el nuevo mensaje
     mensajes.append({
         'tipo': tipo,
         'direccion': direccion,
         'mensaje': mensaje
     })
 
-    # Escribir los mensajes de vuelta al archivo
     with open('mensajes.json', 'w') as file:
         json.dump(mensajes, file)
 
@@ -39,12 +36,14 @@ def tcp_server():
                 if data:
                     datos = data.decode('utf-8')
                     ds = datos.split(" - ")
-                    senddata = ["Header:", [ds[0], ds[1], ds[2], ds[3], ds[4]], "Datos:", ds[5]]
-                    print(len(senddata), senddata[0:2])
-                    print("Recibido (TCP):", senddata)
+                    senddata = "Header:", [ds[0], ds[1], ds[2], ds[3], ds[4]], "Datos:", ds[5]
+                    print("Recibido (TCP):", senddata[0], senddata[1], senddata[2], senddata[3])
                     respuesta = "Tu mensaje es " + ds[5]
                     conn.sendall(respuesta.encode('utf-8'))
-                    #guardar_mensaje('TCP', addr[0], senddata)
+                    guardar_mensaje('TCP', addr[0], {
+                        'Header': senddata[1],
+                        'Datos': senddata[3]
+                    })
 
 def udp_server():
     HOST_UDP = '0.0.0.0'
@@ -58,24 +57,25 @@ def udp_server():
     while True:
         message, address = server_udp.recvfrom(1024)
         print('Conectado por', address[0])
-        mensaje = message.decode('utf-8')
-        print("Recibido (UDP):", mensaje)
-        guardar_mensaje('UDP', address[0], mensaje)
+        datos = message.decode('utf-8')
+        ds = datos.split(" - ")
+        senddata = "Header:", [ds[0], ds[1], ds[2], ds[3], ds[4]], "Datos:", ds[5]
+        print("Recibido (UDP):", senddata[0], senddata[1], senddata[2], senddata[3])
+        guardar_mensaje('UDP', address[0], {
+            'Header': senddata[1],
+            'Datos': senddata[3]
+        })
 
 def main():
-    # Crear el archivo si no existe
     with open('mensajes.json', 'a') as file:
         pass
 
-    # Iniciar servidores en hilos separados
     tcp_thread = threading.Thread(target=tcp_server)
     udp_thread = threading.Thread(target=udp_server)
 
-    # Iniciar hilos
     tcp_thread.start()
     udp_thread.start()
 
-    # Esperar a que ambos hilos terminen
     tcp_thread.join()
     udp_thread.join()
 
