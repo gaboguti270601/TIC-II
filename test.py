@@ -10,39 +10,16 @@ def guardar_mensaje(tipo, direccion, mensaje):
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         mensajes = []
 
-    # Dividir el mensaje en partes
-    partes_mensaje = mensaje.split(',')
+    # Agregar el nuevo mensaje
+    mensajes.append({
+        'tipo': tipo,
+        'direccion': direccion,
+        'mensaje': mensaje
+    })
 
-    # Verificar si hay al menos 5 partes en el mensaje
-    if len(partes_mensaje) >= 5:
-        # Obtener los primeros 5 datos
-        id_device, mac_address, transport_layer, id_protocol, mensaje_largo = partes_mensaje[:5]
-
-        # Agregar el nuevo mensaje con los primeros 5 datos
-        mensajes.append({
-            'tipo': tipo,
-            'direccion': direccion,
-            'id_device': id_device,
-            'mac_address': mac_address,
-            'transport_layer': transport_layer,
-            'id_protocol': id_protocol,
-            'mensaje_largo': mensaje_largo
-        })
-
-        # Escribir los mensajes de vuelta al archivo
-        with open('mensajes.json', 'w') as file:
-            json.dump(mensajes, file)
-
-        # Imprimir el mensaje formateado
-        print(f"Mensaje recibido ({tipo}):")
-        print(f" - Dirección: {direccion}")
-        print(f" - ID_Device: {id_device}")
-        print(f" - MAC_Address: {mac_address}")
-        print(f" - Transport_Layer: {transport_layer}")
-        print(f" - ID_Protocol: {id_protocol}")
-        print(f" - Largo_Mensaje: {mensaje_largo}")
-        print(f" - Mensaje: {mensaje}")
-        print()
+    # Escribir los mensajes de vuelta al archivo
+    with open('mensajes.json', 'w') as file:
+        json.dump(mensajes, file)
 
 def tcp_server():
     HOST_TCP = '0.0.0.0'
@@ -61,9 +38,30 @@ def tcp_server():
                 data = conn.recv(1024)
                 if data:
                     mensaje = data.decode('utf-8')
-                    guardar_mensaje('TCP', addr[0], mensaje)
+
+                    # Dividir el mensaje en partes
+                    partes_mensaje = mensaje.split(',')
+
+                    # Verificar si hay al menos 5 partes en el mensaje
+                    if len(partes_mensaje) >= 5:
+                        # Obtener los primeros 5 datos
+                        id_device, mac_address, transport_layer, id_protocol, mensaje_largo = partes_mensaje[:5]
+
+                        # Imprimir el vector formateado
+                        print(f"Recibido (TCP): Tomados los primeros 5 datos en un vector:")
+                        print(f" - ID_Device: {id_device}")
+                        print(f" - MAC_Address: {mac_address}")
+                        print(f" - Transport_Layer: {transport_layer}")
+                        print(f" - ID_Protocol: {id_protocol}")
+                        print(f" - Largo_Mensaje: {mensaje_largo}")
+                        print(f" - Vector: {partes_mensaje[:5]}")
+
+                    # Imprimir el mensaje normal
+                    print("Mensaje normal (TCP):", mensaje)
+
                     respuesta = "Tu mensaje es " + mensaje
                     conn.sendall(respuesta.encode('utf-8'))
+                    guardar_mensaje('TCP', addr[0], mensaje)
 
 def udp_server():
     HOST_UDP = '0.0.0.0'
@@ -78,6 +76,27 @@ def udp_server():
         message, address = server_udp.recvfrom(1024)
         print('Conectado por', address[0])
         mensaje = message.decode('utf-8')
+
+        # Dividir el mensaje en partes
+        partes_mensaje = mensaje.split(',')
+
+        # Verificar si hay al menos 5 partes en el mensaje
+        if len(partes_mensaje) >= 5:
+            # Obtener los primeros 5 datos
+            id_device, mac_address, transport_layer, id_protocol, mensaje_largo = partes_mensaje[:5]
+
+            # Imprimir el vector formateado
+            print(f"Recibido (UDP): Tomados los primeros 5 datos en un vector:")
+            print(f" - ID_Device: {id_device}")
+            print(f" - MAC_Address: {mac_address}")
+            print(f" - Transport_Layer: {transport_layer}")
+            print(f" - ID_Protocol: {id_protocol}")
+            print(f" - Largo_Mensaje: {mensaje_largo}")
+            print(f" - Vector: {partes_mensaje[:5]}")
+
+        # Imprimir el mensaje normal
+        print("Mensaje normal (UDP):", mensaje)
+
         guardar_mensaje('UDP', address[0], mensaje)
 
 def main():
