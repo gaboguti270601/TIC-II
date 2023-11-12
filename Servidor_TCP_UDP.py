@@ -37,11 +37,14 @@ def tcp_server():
                 print('Conectado por', addr[0])
                 data = conn.recv(1024)
                 if data:
-                    mensaje = data.decode('utf-8')
-                    print("Recibido (TCP):", mensaje)
-                    respuesta = "Tu mensaje es " + mensaje
+                    datos = data.decode('utf-8')
+                    ds = datos.split(" - ")
+                    senddata = ["Header:", [ds[0], ds[1], ds[2], ds[3], ds[4]], "Datos:", ds[5]]
+                    print(len(senddata), senddata[0:2])
+                    print("Recibido (TCP):", senddata)
+                    respuesta = "Tu mensaje es " + ds[5]
                     conn.sendall(respuesta.encode('utf-8'))
-                    guardar_mensaje('TCP', addr[0], mensaje)
+                    #guardar_mensaje('TCP', addr[0], senddata)
 
 def udp_server():
     HOST_UDP = '0.0.0.0'
